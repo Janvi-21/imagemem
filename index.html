@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Iconista - Image Memory Game</title>
+<style>
+  /* Reset and basics */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: #e6f0ff;
+    color: #003366;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container {
+    background: white;
+    max-width: 700px;
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.12);
+    padding: 30px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+    color: #0059b3;
+  }
+  h2 {
+    color: #004080;
+  }
+  .hidden {
+    display: none;
+  }
+  button {
+    background-color: #004080;
+    color: white;
+    border: none;
+    padding: 12px 26px;
+    border-radius: 25px;
+    font-size: 1.05rem;
+    cursor: pointer;
+    margin: 15px 10px 0 10px;
+    transition: background-color 0.3s ease;
+  }
+  button:hover, button:focus {
+    background-color: #003366;
+    outline: none;
+  }
+  #iconImage {
+    max-width: 100%;
+    max-height: 320px;
+    border-radius: 12px;
+    margin: 20px 0 10px 0;
+    box-shadow: 0 5px 20px rgba(0,80,160,0.3);
+    object-fit: contain;
+  }
+  #options {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .option-btn {
+    background-color: #e6f0ff;
+    border: 2px solid #004080;
+    color: #004080;
+    border-radius: 20px;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 1 1 40%;
+    max-width: 45%;
+    min-width: 140px;
+    transition: background-color 0.25s ease, color 0.25s ease;
+    user-select: none;
+  }
+  .option-btn:hover, .option-btn:focus {
+    background-color: #004080;
+    color: white;
+    outline: none;
+  }
+  #scoreDisplay {
+    font-size: 1.25rem;
+    color: #0066cc;
+    margin-top: 18px;
+    font-weight: 700;
+  }
+  #timer {
+    font-size: 1.1rem;
+    margin-top: 10px;
+    font-weight: 600;
+    color: #0073e6;
+  }
+  #historyBtn {
+    margin-top: 15px;
+    background-color: #0073e6;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  #historyBtn:hover {
+    background-color: #005bb5;
+  }
+  /* History modal */
+  #historyModal {
+    position: fixed;
+    top: 0;
+    left:0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  #historyModal.active {
+    display: flex;
+  }
+  #historyContent {
+    background: white;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 25px;
+    text-align: left;
+    box-shadow: 0 0 25px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  #historyContent h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #004080;
+  }
+  #historyClose {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    font-size: 1.8rem;
+    color: #004080;
+    cursor: pointer;
+  }
+  #historyList {
+    list-style: none;
+    padding: 0;
+  }
+  #historyList li {
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .option-btn {
+      flex: 1 1 100%;
+      max-width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Iconista Memory Game</h1>
+
+    <!-- Instructions screen -->
+    <div id="instructions">
+      <h2>How to Play</h2>
+      <p>
+        Welcome! You'll be shown an image of an iconic woman for a few seconds.<br/>
+        Memorize her face, then choose her name from the options given.<br/>
+        There are 3 levels: Easy, Medium, and Hard with different display times.<br/><br/>
+        <b>Easy:</b> Image shows for 8 seconds<br/>
+        <b>Medium:</b> Image shows for 6 seconds<br/>
+        <b>Hard:</b> Image shows for 4 seconds<br/><br/>
+        You will get points for correct answers.<br/>
+        Try to score the highest!<br/><br/>
+      </p>
+      <button id="btnStartInstructions">Start</button>
+      <button id="historyBtn">View History</button>
+    </div>
+
+    <!-- Level selection -->
+    <div id="levelSelection" class="hidden">
+      <h2>Select Level</h2>
+      <button class="selectLevel" data-level="easy">Easy</button>
+      <button class="selectLevel" data-level="medium">Medium</button>
+      <button class="selectLevel" data-level="hard">Hard</button>
+      <button id="historyBtnLS">View History</button>
+    </div>
+
+    <!-- Game screen -->
+    <div id="gameScreen" class="hidden">
+      <h2 id="levelTitle"></h2>
+      <div id="timer">Time Left: <span id="timeLeft"></span> sec</div>
+      <img id="iconImage" src="" alt="Iconic Woman" />
+      <div id="options"></div>
+      <div id="scoreDisplay"></div>
+      <button id="btnNext" class="hidden">Next</button>
+      <button id="btnRestart" class="hidden">Restart Game</button>
+      <button id="historyBtnGS">View History</button>
+    </div>
+  </div>
+
+  <!-- History modal -->
+  <div id="historyModal">
+    <div id="historyContent">
+      <button id="historyClose" aria-label="Close History">&times;</button>
+      <h3>Game History</h3>
+      <ul id="historyList">
+        <!-- Filled dynamically -->
+      </ul>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const instructionsEl = document.getElementById("instructions");
+  const levelSelectionEl = document.getElementById("levelSelection");
+  const gameScreenEl = document.getElementById("gameScreen");
+  const btnStartInstructions = document.getElementById("btnStartInstructions");
+  const selectLevelButtons = document.querySelectorAll(".selectLevel");
+  const levelTitleEl = document.getElementById("levelTitle");
+  const iconImageEl = document.getElementById("iconImage");
+  const optionsEl = document.getElementById("options");
+  const scoreDisplayEl = document.getElementById("scoreDisplay");
+  const btnNext = document.getElementById("btnNext");
+  const btnRestart = document.getElementById("btnRestart");
+  const timerEl = document.getElementById("timeLeft");
+  const timerContainer = document.getElementById("timer");
+
+  const historyBtn = document.getElementById("historyBtn");
+  const historyBtnLS = document.getElementById("historyBtnLS");
+  const historyBtnGS = document.getElementById("historyBtnGS");
+  const historyModal = document.getElementById("historyModal");
+  const historyClose = document.getElementById("historyClose");
+  const historyList = document.getElementById("historyList");
+
+  // DATA for levels: images grouped by difficulty
+  const easyImages = [
+    { name: "Kalpana Chawla", src: "images/easy/kalpana_chawla.jpeg" },
+    { name: "Indira Gandhi", src: "images/easy/indira_gandhi.jpeg" },
+    { name: "Mother Teresa", src: "images/easy/mother_teresa.jpeg" },
+    { name: "Rani Lakshmibai", src: "images/easy/rani_lakshmi_bai.jpeg" },
+    { name: "Saina Nehwal", src: "images/easy/saina_nehwal.jpeg" },
+    { name: "Michelle Obama", src: "images/easy/michelle_obama.jpeg" },
+    { name: "Malala Yousafzai", src: "images/easy/malala_yousafzai.jpeg" },
+    { name: "Avani chaturvedi", src: "images/easy/avani_chaturvedi.jpg" },
+    { name: "Bhawana Kanth", src: "images/easy/bhawana_kanth.jpeg" },
+    { name: "Bhawana Kanth", src: "images/easy/bhawana_kanth.jpeg" },
+    { name: "Deepika Padukon", src: "images/easy/deepika_padukon.jpeg" },
+    { name: "Hima Das", src: "images/easy/hima_das.jpeg" },
+    { name: "Kangana Ranaut", src: "images/easy/kangana_ranaut.jpeg" },
+    { name: "Kiran Bedi", src: "images/easy/kiran_bedi.jpeg" },
+    { name: "Mary Kom", src: "images/easy/mary_kom.jpeg" },
+    { name: "Mithali Raj", src: "images/easy/Mithali Raj.jpeg" },
+    { name: "PV Sindhu", src: "images/easy/pv_sindhu.jpeg" },
+    { name: "Sania Mirza", src: "images/easy/sania_mirza.jpeg" },
+    { name: "Smriti Irani", src: "images/easy/smriti_irani.jpeg" },
+    { name: "Sudha Murty", src: "images/easy/sudha_murty.jpeg" }
+  ];
+
+  const mediumImages = [
+    { name: "Bhakti Sharma", src: "images/medium/bhakti_sharma.jpeg" },
+    { name: "Dipa Karmakar", src: "images/medium/dipa_karmakar.jpeg" },
+    { name: "Ada Lovelace", src: "images/medium/ada_lovelace.jpeg" },
+    { name: "Arundhati Roy", src: "images/medium/arundhati_roy.jpeg" },
+    { name: "falguni Nayar", src: "images/medium/falguni_nayar.jpeg" },
+    { name: "Gauri Lankesh", src: "images/medium/dauri_lankesh.jpeg" },
+    { name: "Gitanjali Rao", src: "images/medium/gitanjali_rao.jpeg" },
+    { name: "Irom Sharmila", src: "images/medium/irom_sharmila.jpeg" },
+    { name: "Kamala Harris", src: "images/medium/kamala_harris.jpeg" },
+    { name: "Laxmi Agarwal", src: "images/medium/laxmi_agarwal.jpeg" },
+    { name: "Manushi Chillar", src: "images/medium/manushi_chillar.jpeg" },
+    { name: "Neera Bhanit", src: "images/medium/neera_bhanit.jpeg" },
+    { name: "Nirmala Sitharaman", src: "images/medium/nirmala_sitharaman.jpeg" },
+  { name: "Rajalakshmi Nandakumar", src: "images/medium/rajalakshmi_nandakumar.jpeg" },
+  { name: "Rani Durgavati", src: "images/medium/rani_durgavati.jpeg" },
+  { name: "Richa kar", src: "images/medium/richa_kar.jpeg" },
+  { name: "Rukmini Devi", src: "images/medium/rukmini_devi.jpeg" },
+  { name: "Sushma sawaraj", src: "images/medium/savitribai_phule.jpeg" },
+  { name: "Tessy Thomas", src: "images/medium/tessy_thomas.jpeg" },
+  ];
+
+  const hardImages = [
+    { name: "Anandibai joshi", src: "images/hard/anandibai_joshi.jpeg" },
+    { name: "Bhanwari devi", src: "images/hard/bhanwari_devi.jpeg" },
+    { name: "Dr Indira Hinduja", src: "images/hard/dr_indira_hinduja.jpeg" },
+    { name: "Durga Bai Deshmukh", src: "images/hard/durga_bai_deshmukh.jpeg" },
+    { name: "Fatima Beevi", src: "images/hard/fatima_beevi.jpeg" },
+    { name: "Janaki Ammal", src: "images/hard/janaki_ammal.jpeg" },
+    { name: "Kamladevi Chattopadhyay", src: "images/hard/kamladevi_chattopadhyay.jpeg" },
+    { name: "MuthuLakshmi Reddy", src: "images/hard/muthuLakshmi_reddy.jpeg" },
+    { name: "Rani Abbakka", src: "images/hard/rani_abbakka.jpeg" },
+    // { name: "Sushmita Sen", src: "images/hard/sushmita_sen.jpg" },
+    // { name: "Kiran Bedi", src: "images/hard/kiran_bedi.jpg" },
+    // { name: "M.S. Subbulakshmi", src: "images/hard/ms_subbulakshmi.jpg" },
+    // { name: "Irom Sharmila", src: "images/hard/irom_sharmila.jpg" },
+    // { name: "Barkha Dutt", src: "images/hard/barkha_dutt.jpg" },
+    // { name: "Nirmala Sitharaman", src: "images/hard/nirmala_sitharaman.jpg" },
+    // { name: "Amrita Sher-Gil", src: "images/hard/amrita_sher_gil.jpg" },
+    // { name: "Chandrika Kumaratunga", src: "images/hard/chandrika_kumaratunga.jpg" },
+    // { name: "Serena Williams", src: "images/hard/serena_williams.jpg" },
+    // { name: "Amal Clooney", src: "images/hard/amal_clooney.jpg" }
+    { name: "Tarabai Shinde", src: "images/hard/tarabai _shinde.jpeg" }
+  ];
+
+  // Level configurations 
+  const levels = {
+    easy: { displayTime: 8000, questionsCount: 8, images: easyImages },
+    medium: { displayTime: 6000, questionsCount: 12, images: mediumImages },
+    hard: { displayTime: 4000, questionsCount: 20, images: hardImages }
+  };
+
+  // Variables
+  let selectedLevel = null;
+  let currentScore = 0;
+  let currentQuestionIndex = 0;
+  let gameQuestions = [];
+  let imageHideTimeout = null;
+  let countdownInterval = null;
+
+  // Event Listeners
+  btnStartInstructions.addEventListener("click", () => {
+    instructionsEl.classList.add("hidden");
+    levelSelectionEl.classList.remove("hidden");
+  });
+
+  selectLevelButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedLevel = btn.dataset.level;
+      levelSelectionEl.classList.add("hidden");
+      startLevel(selectedLevel);
+    });
+  });
+
+  btnNext.addEventListener("click", () => {
+    btnNext.classList.add("hidden");
+    optionsEl.innerHTML = "";
+    scoreDisplayEl.textContent = "";
+    currentQuestionIndex++;
+    nextQuestion();
+  });
+
+  btnRestart.addEventListener("click", () => {
+    resetGame();
+  });
+
+  // History buttons
+  const historyButtons = [historyBtn, historyBtnLS, historyBtnGS];
+  historyButtons.forEach(btn => btn.addEventListener("click", showHistory));
+  historyClose.addEventListener("click", () => {
+    historyModal.classList.remove("active");
+  });
+  // click outside content closes
+  historyModal.addEventListener("click", e => {
+    if (e.target === historyModal) historyModal.classList.remove("active");
+  });
+
+  // Functions
+  function shuffleArray(arr) {
+    return arr.sort(() => Math.random() - 0.5);
+  }
+
+  function startLevel(level) {
+    currentScore = 0;
+    currentQuestionIndex = 0;
+    const dataSet = levels[level].images;
+    gameQuestions = shuffleArray(dataSet).slice(0, levels[level].questionsCount);
+    levelTitleEl.textContent = `Level: ${level.charAt(0).toUpperCase() + level.slice(1)}`;
+    gameScreenEl.classList.remove("hidden");
+    showImage();
+  }
+
+  function showImage() {
+    clearTimeout(imageHideTimeout);
+    clearInterval(countdownInterval);
+
+    if (currentQuestionIndex >= gameQuestions.length) {
+      endGame();
+      return;
+    }
+
+    const question = gameQuestions[currentQuestionIndex];
+    iconImageEl.src = question.src;
+    iconImageEl.alt = question.name;
+    iconImageEl.style.display = "block";
+    optionsEl.innerHTML = "";
+    scoreDisplayEl.textContent = `Score: ${currentScore} / ${gameQuestions.length}`;
+    btnNext.classList.add("hidden");
+    btnRestart.classList.add("hidden");
+    timerContainer.style.display = "block";
+
+    // Timer countdown
+    let timeLeft = levels[selectedLevel].displayTime / 1000;
+    timerEl.textContent = timeLeft;
+
+    countdownInterval = setInterval(() => {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+      }
+    }, 1000);
+
+    imageHideTimeout = setTimeout(() => {
+      iconImageEl.style.display = "none";
+      timerContainer.style.display = "none";
+      showOptions();
+    }, levels[selectedLevel].displayTime);
+  }
+
+  function showOptions() {
+    optionsEl.innerHTML = "";
+    const correctAnswer = gameQuestions[currentQuestionIndex].name;
+    const optionsSet = new Set();
+    optionsSet.add(correctAnswer);
+
+    while (optionsSet.size < 4) {
+      const randomName = levels[selectedLevel].images[Math.floor(Math.random()*levels[selectedLevel].images.length)].name;
+      if (!optionsSet.has(randomName)) {
+        optionsSet.add(randomName);
+      }
+    }
+
+    const shuffledOptions = shuffleArray([...optionsSet]);
+    for (let optionName of shuffledOptions) {
+      const btn = document.createElement("button");
+      btn.textContent = optionName;
+      btn.className = "option-btn";
+      btn.setAttribute("type", "button");
+      btn.addEventListener("click", () => selectAnswer(optionName));
+      optionsEl.appendChild(btn);
+    }
+  }
+
+  function selectAnswer(selectedName) {
+    const correctName = gameQuestions[currentQuestionIndex].name;
+    if (selectedName === correctName) {
+      currentScore++;
+      scoreDisplayEl.textContent = "Correct! 🎉";
+      scoreDisplayEl.style.color = "#007a00";
+    } else {
+      scoreDisplayEl.textContent = `Wrong! Correct answer was "${correctName}".`;
+      scoreDisplayEl.style.color = "#cc0000";
+    }
+
+    // disable options
+    Array.from(optionsEl.children).forEach(btn => btn.disabled = true);
+    btnNext.classList.remove("hidden");
+    btnRestart.classList.remove("hidden");
+  }
+
+  function nextQuestion() {
+    showImage();
+  }
+
+  function endGame() {
+    clearTimeout(imageHideTimeout);
+    clearInterval(countdownInterval);
+    iconImageEl.style.display = "none";
+    optionsEl.innerHTML = "";
+    timerContainer.style.display = "none";
+
+    scoreDisplayEl.style.color = "#004080";
+    scoreDisplayEl.textContent = `Game Over! Your final score: ${currentScore} / ${gameQuestions.length}`;
+    btnNext.classList.add("hidden");
+    btnRestart.classList.remove("hidden");
+
+    // Save to history
+    saveGameHistory({
+      date: new Date().toISOString(),
+      level: selectedLevel,
+      score: currentScore,
+      total: gameQuestions.length
+    });
+  }
+
+  function resetGame() {
+    currentScore = 0;
+    currentQuestionIndex = 0;
+    selectedLevel = null;
+    gameQuestions = [];
+    iconImageEl.style.display = "none";
+    optionsEl.innerHTML = "";
+    scoreDisplayEl.textContent = "";
+    timerContainer.style.display = "none";
+    btnNext.classList.add("hidden");
+    btnRestart.classList.add("hidden");
+    gameScreenEl.classList.add("hidden");
+    instructionsEl.classList.remove("hidden");
+  }
+
+  // LocalStorage keys
+  const HISTORY_KEY = "iconistaMemoryGameHistory";
+
+  function saveGameHistory(record) {
+    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    history.push(record);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  }
+
+  function showHistory() {
+    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    historyList.innerHTML = "";
+
+    if (history.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "No game history found.";
+      historyList.appendChild(li);
+    } else {
+      history.slice().reverse().forEach(record => {
+        const li = document.createElement("li");
+        const date = new Date(record.date);
+        li.textContent = `${date.toLocaleString()}: Level ${record.level.charAt(0).toUpperCase()+ record.level.slice(1)}, Score ${record.score} / ${record.total}`;
+        historyList.appendChild(li);
+      });
+    }
+    historyModal.classList.add("active");
+  }
+
+  // Initialize
+  resetGame();
+
+})();
+</script>
+
+</body>
+</html>
+
